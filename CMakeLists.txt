@@ -1,10 +1,21 @@
 cmake_minimum_required(VERSION 3.17)
 project(ecmaC)
 
+set(NODEJS "node")
+#the parser is written in JS, so require node as a package
+find_program(NODE_RESULT ${NODEJS} REQUIRED)
+#from the documentation on find_program,
+#If nothing is found, the result will be <VAR>-NOTFOUND
+if("${NODE_RESULT}" STREQUAL "NODE_RESULT-NOTFOUND")
+    message(FATAL_ERROR "negative path. didn't find ${NODEJS}")
+else()
+    message("positive path. found ${NODEJS} at ${NODE_RESULT}")
+endif()
+
+
 #src stuff
 add_library(ecmaC_lib SHARED
-    src/lexer.cpp src/lexer.h
-)
+    src/ast.cpp src/ast.h)
 
 add_executable(
     ecmaC_driver

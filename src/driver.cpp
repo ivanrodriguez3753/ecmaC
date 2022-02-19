@@ -7,6 +7,6 @@ int main() {
     //testing right now by setting working directory of the executable to the /ecmaC/src/
     system("node ./js/main.js");
 
-    someClass myInst;
+    someClass myInst; //from ast.h
     std::cout << myInst.returnHi();
 }

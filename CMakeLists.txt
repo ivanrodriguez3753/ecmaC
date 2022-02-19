@@ -10,6 +10,17 @@ if("${NODE_RESULT}" STREQUAL "NODE_RESULT-NOTFOUND")
     message(FATAL_ERROR "negative path. didn't find ${NODEJS}")
 else()
     message("positive path. found ${NODEJS} at ${NODE_RESULT}")
+    #TODO: insert a check for npm, but brew had node and npm installed together so this might be redundant. Hence leaving as a todo
+    execute_process(COMMAND npm ls
+                    COMMAND grep esprima RESULT_VARIABLE grep_res) #0 if grep found something
+    if(grep_res) #if grep didn't find esprima
+        message("Installing esprima")
+        execute_process(COMMAND npm install esprima)
+    else()
+        message("found esprima")
+    endif()
+
+
 endif()
 
 

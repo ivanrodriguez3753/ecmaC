@@ -5,7 +5,7 @@
 #include "jsonParser.h"
 
 const std::string ESPRIMA_DRIVER_TEMP_FILENAME = "esprima_driver_temp.js";
-const std::string TREE_TEMP_FILENAME = "tree.json";
+const std::string TREE_TEMP_FILENAME = "tree_temp.json";
 
 void generate_esprima_driver(const std::string& user_file_name) {
     std::string source =
@@ -13,7 +13,7 @@ void generate_esprima_driver(const std::string& user_file_name) {
         "const esprima = require(\"esprima\");\n"
         "const contentBuffer = fs.readFileSync(\"" + user_file_name + "\");\n"
         "const content_asString = contentBuffer.toString();\n"
-        "var tree = esprima.parseScript(content_asString);\n"
+        "var tree = esprima.parseScript(content_asString, {loc: true});\n"
         "console.log(JSON.stringify(tree));\n"
         "\n"
         "";
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
         user_file_name = argv[1];
     }
     else {
-        std::cerr << "Must provide 2 or 3 arguments\n";
+        std::cerr << "Must provide 1 or 2 arguments\n";
         exit(1);
     }
 
@@ -63,6 +63,9 @@ int main(int argc, char* argv[]) {
 
 
     jsonParser j_parser(file_stream);
+    j_parser.buildAST();
+
+
     j_parser.dumpJson();
 
 

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <ostream>
 #include <fstream>
+#include "runtime.h"
 #include "ast.h"
 #include "jsonParser.h"
 
@@ -65,6 +66,7 @@ int main(int argc, char* argv[]) {
     jsonParser j_parser(file_stream);
     j_parser.buildAST();
 
+    initRuntime();
 
     j_parser.dumpJson();
 

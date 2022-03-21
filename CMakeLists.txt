@@ -27,7 +27,7 @@ endif()
 
 #src stuff
 add_library(ecmaC_lib SHARED
-    src/ast.cpp src/ast.h src/jsonParser.cpp src/jsonParser.h)
+    src/ast.cpp src/ast.h src/jsonParser.cpp src/jsonParser.h src/runtime.cpp src/runtime.h)
 
 #JSON library
 include(FetchContent)

@@ -1,0 +1,170 @@
+Initial review of the ECMA spec
+Start at 4.3 (unless you wanna read the ToC)
+	Okay, 4.3 object model and semantics were important (but leaving our the prototype/inheritance bits for now would greatly simplify)
+Some definitions in 4.4 were useful to read
+Jump to chapter 6
+	6.1 Lang Types
+		Beginning of 6.1 has the exact edge cases for Undefined/Null types/values
+			I think the lang types are mutually exclusive. aka a String is not an Object.
+			6.1.5 Symbol type distinction from string is interesting
+	Skip to 6.1.7
+		Read this in detail, methinks
+		difference between data/accessor property seems important
+		Need to come back to internal methods/slots some time, but read through 6.1.7.2 section
+	6.2 Spec Types
+		huh... this is interesting
+		meta-values used to describe semantics of ECMA language constructs and ECMA lang types
+			Reference, List, Completion, Property Descriptor, Env Record, Abstract Closure, Data Block
+		Spec type VALUES are spec artefacts that do not necessarily correspond to any specific entity within an ECMA implementation. Spec type values may be used to describe intermediate results of an ECMA expr evaluation, but such values CANNOT be stored as properties of objects or values of ECMA lang variables
+			so it seems like these are the 'types' you would use in your IR (Intermediate Representation). Not sure though
+		SUMMARY OF SPEC TYPES (this covers 6.2.1 thru 6.2.8, out of order)
+			List
+				used to explain evaluation of argument lists in new's, function calls, and other stuff
+			Record
+				data aggregation (a struct)
+			Completion
+				Record used to explain runtime propagation of values and control flow (normal, break, continue, return, throw keywords)
+			Reference
+				Record used to explain behavior of delete,typeof,assignmentOp, super, etc. Is a resolved name or property binding.
+			Set
+				used to explain collection of unordered elements for use in the memory model
+			Relation
+				used to explain constraints on Sets
+			Property Descriptor
+				used to explain manipulation and reification of Object property attributes. values are Records
+			Environment
+				Record type used to explain behavior of name resolution in nested functions and blocks
+			Abstract Closure
+				used to refer to algo steps together with a collection of values
+				Abstract closures are meta-values and are invoked using function application style
+			Data Block
+				used to describe a distinct and mutable sequence of byte-sized numeric values
+Chapter 7 is basically describing the abstract operations that we need to be able to do on the things in Chapter 6, I think
+	It's sufficient to read the ToC entries for Chapter 7, then skim the important ones like 7.3 Operations on Objects
+Chapter 8 makes a lot more sense now, but I don't think it's something you have to read right now. It's essentially describing what happens at junctions in the AST. It seems like the Static Semantics describe things we'll be doing when walking the tree, like constructing/populating certain data structures (which are described in terms of Terms defined in the spec). Will return to this in detail I'm sure, but for now, skim quickly.
+9 Executable Code and Execution Contexts
+	9.1 Env Records
+		spec type used to define association between Identifiers to specific vars and functions, based upon the LEXICAL nesting structure of the ECMA code.
+		An EnvRec is usually associated with a specific syntactic struct of ECMA code like FunctionDeclaration, BlockStatement, etc
+		Each time such code is evaluated, a new EnvRec is created to record the identifier bindings created by that code
+	9.1.1 EnvRec Type Hierarchy
+	EnvRecord(abstract)
+		declarative
+			function- corresponds to invocation of ECMA function object, contains bindings for top level decls within that function.
+			module- contains bindings for top-level decls of a Module
+		object- used to define effect of ECMA elements (such as WithStatement) that associate identifier bindings with the properties of some object
+		global- used for Script global declarations. no outer environment. may be prepopulated with identifier bindings and includes an associated global object
+
+		9.1.1.1 Declarative Env Records: each one is associated with an ECMA program scope. a declarative envRec binds set of identifiers defined by the declarations contained within its scope.
+		9.1.1.2 Obj Env Records: each one is associated with an object called its binding object. Binds set of string identifiers names that directly correspond to property names of its binding object.
+		9.1.1.3 Function Env Records: used to represent top-level scope of a function
+		9.1.1.4 Global Env Records: used to represent outermost scope shared by all ECMA Script elements that are processed in a common realm. Provides bindings for built-in globals, properties of the global object, and for all top level decls within a Script
+			Logically a single record, but specified as a composite encapsulating an ObjEnvRec and a declEnvRec.
+			I think the more references I see to realm, the more I think that we'll at first assume a SINGLE realm. Not exactly sure what it is yet though
+		9.1.1.5 Module Env Records: used to represent outer scope of an ECMA module
+	9.1.2 Environment Record Operations
+		Skim through this, but the interfaces/algos are useful
+	9.2 Realms
+	Before being evaluated, all ECMA code must be associated with a realm. A realm consists of
+		set of intrinsic objects, an ECMA GlobalEnv, and all ECMA code loaded within the scope of that GlobalEnv
+	9.3 Execution Contexts
+		a specification device used to track runtime evaluation of code by an ECMA implementation
+		execution context stack is used to track execution contexts. running execution context is always top frame of this stack.
+		additional state for an execution context is held by a LexicalEnv and VariableEnv
+	9.4 Jobs and Host Operations to Enqueue Jobs
+		A job is an abstract closure with no parameters that initiates en ECMA computation when no other ECMA computation is currently in progress
+			Don't really understand abstract closures yet tbh... will come back to this
+	9.6 Agents
+		A lot of this assumes we'll support async operations and threads... which we won't. So skip
+	Skip to Chapter 10
+	Stopped at Chapter 10
+
+
+
+
+
+
+
+
+
+
+WEDNESDAY MARCH 24
+notes for the guys on ecmascript implementation:
+
+Chapter 7, Abstract Operations
+	7.3 Operations on Objects
+		7.3.4 CreateDataProperty(O, P, V)
+			Create a new PropertyDescriptor
+			return O.[[DefineOwnProperty]](P, newDesc)
+				In this case, O will be an OrdinaryObject so it will call js_ordinary_object.DefineOwnProperty() (9.1.6, the OrdinaryObject implementation of [[DefineOwnProperty]])
+
+				9.1.6 OrdinaryObject.[[DefineOwnProperty]] just passes through to 9.1.6.1 OrdinaryDefineOwnProperty()
+					9.1.6.1 OrdinaryDefineOwnProperty
+						Set current = O.[[GetOwnProperty]]
+							9.1.5 OrdinaryObject.[[GetOwnProperty]] just passes through to 9.1.5.1 OrdinaryGetOwnProperty()
+								9.1.5.1 OrdinaryGetOwnProperty()
+
+
+						In the last (4th) step, call 9.1.6.3 ValidateAndApplyPropertyDescriptor()
+							9.1.6.3 ValidateAndApplyPropertyDescriptor() has no major function calls. Long but straightforward
+
+
+
+Some node notes:
+I'm using the following commit if you are looking at line numbers and files: d4d0b09122d91478881ee7fd36eb3c9f78f8452d
+Smi just refers to an int value that fits in 31 bits so it is allocated on the stack, not heap
+
+In node, this type hierarchy is going on:
+	template<HeapObjectRefType, typename StorageType> class TaggedImpl
+		in v8/src/objects/tagged-impl.h, we have this base class for all Objects (which they say is either an Smi or strong ref to a HeapObject)
+
+		class Object : public TaggedImpl<HeapObjectReferenceType::STRONG, Address>
+			This is the abstract superclass for all classes in Object hierarchy. This class only has static functions, and most of them are IsJSObject or IsSomeType methods that return a bool. Though there are some other ones worth seeing.
+			Only one member: Address Ptr. Note the typedef uintptr_t Address so it's just an integer pointer type
+			v8/src/objects/object-list-macros.h has macros defining the Object types, that is, storage they keep track of. Most of it is Heap allocated stuff but Primitive/Number/Numeric are stack allocated I believe
+
+			HeapObject : public Object
+				superclass for all classes describing heap allocated objects
+
+
+				NOTE: They use some tool/language called Torque for part of the code, just read the generic type arguments are the type hierarchy. So in this next one, JSReceiver inherits from HeapObject
+				class JSReceiver : public TorqueGeneratedJSReceiver<JSReceiver, HeapObject>
+					includes types on which properties can be defined (i.e. JSObject and JSProxy)
+					The function I am trying to implement, 7.3.4 CreateDataProperty(O, P, V), is defined as a static function JSReceiver::CreateDataProperty (v8/src/objects/js-objects.h:l170) (even references the spec ES6 7.3.4)
+					There is also a static "dispatcher" function that handles the "virtual" calls for O.[[DefineOwnProperty]]. It's straightforward but useful to look at the definition (v8/src/objects/js-objects.cc:l1076)
+
+					class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver>
+						also has a static CreateDataProperty(), which is called by JSReceiver's static CreateDataProperty, and calls [[DefineOwnProperty]]
+
+						class JSDataPropertyDescriptor : public JSObject
+							This solves a problem I had, I think. Just make the property descriptor inherit from JSObject
+
+							I think this far down in the hierarchy is enough to solve the problem I was having in da prototype
+							Some more classes defined in js-objects.h
+
+						class JSCustomElementsObject : public TorqueGeneratedJSCustomElementsObject<JSCustomElementsObject, JSObject>
+							class JSSpecialObject : public TorqueGeneratedJSSpecialObject<JSSpecialObject, JSCustomElementsObject>
+								class JSGlobalObject : public TorqueGeneratedJSGlobalObject<JSGlobalObject, JSSpecialObject>
+									class JSPrimitiveWrapper : public TorqueGeneratedJSPrimitiveWrapper<JSPrimitiveWrapper, JSCustomElementsObject>
+										// Representation for JS Wrapper objects, String, Number, Boolean, etc.
+
+So in node's source, the call hierarchy is something like
+	JSReceiver::CreateDataProperty() calls JSReceiver::DefineOwnProperty
+		JSReceiver::DefineOwnProperty() is the static dispatcher to the appropriate subclass (static) DefineOwnProperty() method. Check the def of this on js-objects.cc:l1076.
+		In the spec, you'd call O.[[DefineOwnProperty]], but this passes through to OrdinaryDefineOwnProperty [in the spec] so we call...
+		JSReceiver::OrdinaryDefineOwnProperty() (9.1.6.1)
+			JSReceiver::GetOwnPropertyDescriptor()
+				does a virtual dispatch, here is where we call JSObject::GetPropertyAttributes() as part of step 2 of 9.1.5.1
+			As in the last step (4) of the spec, call ValidateAndApplyPropertyDescriptor
+			JSReceiver::ValidateAndApplyPropertyDescriptor
+				This is the long but straightforward algorithm from 9.1.6.3
+				Somewhere down the call stack we get to
+				Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes
+					At the very end of this we call
+					Object::AddDataProperty
+						JSObject::AddDataElement
+							virtual call accessor->Add from ElementsAccessor.
+							subtype into InternalElementsAccessor, subtype into ElementsAccessorBase
+							ElementsAccessorBase::Add calls Subclass::AddImpl()
+								Okay, so Subclass is used repeatedly as a typename argument to the template.
+								There are only a handful (like 5 or 6) AddImpl() that dont have UNREACHABLE() macro
